@@ -49,7 +49,7 @@ function CircularProgress({
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="text-blue-600 transition-all duration-700"
+            className="text-violet-600 transition-all duration-700"
           />
         </svg>
 
@@ -142,22 +142,24 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#dbeafe,transparent_35%),linear-gradient(to_bottom,#f8fafc,#e2e8f0)] px-4 py-8 text-slate-950 md:px-8">
+    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,#ede9fe,transparent_40%),radial-gradient(ellipse_at_bottom_right,#dbeafe,transparent_40%),linear-gradient(to_bottom,#f8fafc,#eef2ff)] px-4 py-8 text-slate-950 md:px-8">
       <div className="mx-auto max-w-6xl">
-        <section className="mb-8 rounded-[2rem] border border-white/70 bg-white/90 p-8 shadow-xl md:p-12">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
-            AI Agent Developer Assignment
-          </p>
+        <section className="mb-8 overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 p-8 shadow-xl md:p-12">
+          {/* Top accent bar */}
+          <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500" />
 
           <h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">
-            Automated Landing Page Generator
+            Automated{" "}
+            <span className="bg-gradient-to-r from-violet-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent">
+              Landing Page
+            </span>{" "}
+            Generator
           </h1>
 
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-500">
             Generate a mobile app landing page from a Google Play URL using a
             multi-agent AI workflow with dynamic CTA logic.
           </p>
-
         </section>
 
         <form
@@ -173,7 +175,8 @@ export default function Home() {
               <input
                 value={googlePlayUrl}
                 onChange={(event) => setGooglePlayUrl(event.target.value)}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                placeholder="https://play.google.com/store/apps/details?id=..."
               />
             </div>
 
@@ -185,7 +188,7 @@ export default function Home() {
               <select
                 value={ctaMode}
                 onChange={(event) => setCtaMode(event.target.value as CTAMode)}
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
               >
                 <option value="install">Install / Google Play</option>
                 <option value="stripe_subscription">
@@ -193,7 +196,7 @@ export default function Home() {
                 </option>
               </select>
 
-              <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-700">
                 {ctaMode === "install" ? (
                   <p>
                     The generated landing page CTA will send users directly to
@@ -218,7 +221,7 @@ export default function Home() {
           </div>
 
           {loading && (
-            <div className="mt-6 grid gap-5 rounded-3xl border bg-slate-50 p-5 md:grid-cols-[220px_1fr]">
+            <div className="mt-6 grid gap-5 rounded-3xl border border-indigo-100 bg-gradient-to-br from-slate-50 to-indigo-50 p-5 md:grid-cols-[220px_1fr]">
               <CircularProgress
                 progress={progress}
                 label={loadingSteps[currentStepIndex]}
@@ -227,7 +230,7 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-black">Processing pipeline</h3>
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-sm font-bold text-white">
+                  <span className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1 text-sm font-bold text-white">
                     {seconds}s
                   </span>
                 </div>
@@ -236,13 +239,14 @@ export default function Home() {
                   {loadingSteps.map((step, index) => (
                     <div
                       key={step}
-                      className={`rounded-2xl border p-4 text-sm font-semibold ${
+                      className={`rounded-2xl border p-4 text-sm font-semibold transition-all ${
                         index <= currentStepIndex
-                          ? "border-blue-200 bg-blue-50 text-blue-900"
-                          : "bg-white text-slate-500"
+                          ? "border-violet-200 bg-violet-50 text-violet-900"
+                          : "bg-white text-slate-400"
                       }`}
                     >
-                      {index + 1}. {step}
+                      {index <= currentStepIndex ? "✓" : `${index + 1}.`}{" "}
+                      {step}
                     </div>
                   ))}
                 </div>
@@ -251,12 +255,12 @@ export default function Home() {
           )}
 
           {result && !loading && (
-            <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
-              <h3 className="text-xl font-black text-emerald-950">
-                Landing page is ready
+            <div className="mt-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-6">
+              <h3 className="text-xl font-black text-emerald-900">
+                🎉 Landing page is ready
               </h3>
 
-              <p className="mt-2 text-sm text-emerald-800">
+              <p className="mt-2 text-sm text-emerald-700">
                 CTA mode:{" "}
                 <span className="font-bold">
                   {result.cta.mode === "install"
@@ -268,9 +272,9 @@ export default function Home() {
               <button
                 type="button"
                 onClick={openLandingPage}
-                className="mt-4 rounded-2xl bg-emerald-700 px-6 py-3 font-bold text-white transition hover:bg-emerald-800"
+                className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-3 font-bold text-white shadow-md shadow-emerald-100 transition hover:-translate-y-0.5 hover:from-emerald-700 hover:to-teal-700"
               >
-                Open Landing Page
+                Open Landing Page →
               </button>
             </div>
           )}
