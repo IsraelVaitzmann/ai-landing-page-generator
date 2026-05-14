@@ -265,11 +265,6 @@ export default function Home() {
                 </span>
               </p>
 
-              <p className="mt-1 text-sm text-emerald-800">
-                CTA destination:{" "}
-                <span className="font-bold break-all">{result.cta.url}</span>
-              </p>
-
               <button
                 type="button"
                 onClick={openLandingPage}
