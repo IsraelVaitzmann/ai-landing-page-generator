@@ -145,8 +145,8 @@ def generate_landing_page_graph_workflow(
 ) -> FinalLandingPagePayload:
     if request.ctaMode == "stripe_subscription" and not request.stripeCheckoutUrl:
         raise ValueError(
-            "stripeCheckoutUrl is required when ctaMode is stripe_subscription"
-        )
+        "stripeCheckoutUrl is required when ctaMode is stripe_subscription"
+    )
 
     graph = build_landing_graph()
 

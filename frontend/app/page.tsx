@@ -67,7 +67,7 @@ function CircularProgress({
 
 export default function Home() {
   const [googlePlayUrl, setGooglePlayUrl] = useState(
-    "https://play.google.com/store/apps/details?id=com.spotify.music"
+    ""
   );
 
   const [ctaMode, setCtaMode] = useState<CTAMode>("install");
