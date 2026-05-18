@@ -1,3 +1,4 @@
+import os
 from typing import Optional, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -8,9 +9,12 @@ from agents.cta_agent import generate_cta_config
 from models.schemas import (
     CTAConfig,
     CTAConfigInput,
+    CopyStrategy,
     FinalLandingPagePayload,
     GenerateLandingPageRequest,
+    GenerationMode,
     LandingPageContent,
+    LandingPageVariant,
     MarketingInsights,
     ScreenshotSelection,
 )
@@ -21,10 +25,11 @@ class LandingGraphState(TypedDict, total=False):
     request: GenerateLandingPageRequest
     app_data: dict
     marketing_insights: MarketingInsights
+    screenshot_selection: ScreenshotSelection
     landing_page: LandingPageContent
+    variants: list[LandingPageVariant]
     cta: CTAConfig
     final_payload: FinalLandingPagePayload
-    screenshot_selection: ScreenshotSelection
 
 def extraction_node(state: LandingGraphState) -> LandingGraphState:
     print("Graph node: extraction")
@@ -52,15 +57,50 @@ def copywriter_node(state: LandingGraphState) -> LandingGraphState:
     request = state["request"]
     app_data = state["app_data"]
     marketing_insights = state["marketing_insights"]
-
     screenshot_selection = state["screenshot_selection"]
+
+    if request.generationMode == GenerationMode.ab_test:
+        conservative_page = generate_landing_page_content(
+            app_data=app_data,
+            marketing_insights=marketing_insights.model_dump(),
+            cta_mode=request.ctaMode,
+            selected_screenshots=screenshot_selection.gallery_screenshots,
+            strategy=CopyStrategy.conservative,
+        )
+
+        creative_page = generate_landing_page_content(
+            app_data=app_data,
+            marketing_insights=marketing_insights.model_dump(),
+            cta_mode=request.ctaMode,
+            selected_screenshots=screenshot_selection.gallery_screenshots,
+            strategy=CopyStrategy.creative,
+        )
+
+        return {
+            "variants": [
+                LandingPageVariant(
+                    variant_id="a",
+                    variant_name="Variant A — Conservative",
+                    strategy=CopyStrategy.conservative,
+                    landing_page=conservative_page,
+                ),
+                LandingPageVariant(
+                    variant_id="b",
+                    variant_name="Variant B — Creative",
+                    strategy=CopyStrategy.creative,
+                    landing_page=creative_page,
+                ),
+            ]
+        }
 
     landing_page = generate_landing_page_content(
         app_data=app_data,
         marketing_insights=marketing_insights.model_dump(),
         cta_mode=request.ctaMode,
         selected_screenshots=screenshot_selection.gallery_screenshots,
+        strategy=CopyStrategy.balanced,
     )
+
     return {
         "landing_page": landing_page,
     }
@@ -104,15 +144,16 @@ def final_payload_node(state: LandingGraphState) -> LandingGraphState:
 
     request = state["request"]
     app_data = state["app_data"]
-    landing_page = state["landing_page"]
     cta = state["cta"]
 
     final_payload = FinalLandingPagePayload(
         app_name=app_data["title"],
         app_icon=app_data.get("icon"),
         google_play_url=request.googlePlayUrl,
-        landing_page=landing_page,
+        landing_page=state.get("landing_page"),
+        variants=state.get("variants", []),
         cta=cta,
+        generation_mode=request.generationMode,
         screenshot_selection=state.get("screenshot_selection"),
     )
 
@@ -143,10 +184,12 @@ def build_landing_graph():
 def generate_landing_page_graph_workflow(
     request: GenerateLandingPageRequest,
 ) -> FinalLandingPagePayload:
-    if request.ctaMode == "stripe_subscription" and not request.stripeCheckoutUrl:
+    if request.ctaMode == "stripe_subscription" and not (
+        request.stripeCheckoutUrl or os.getenv("STRIPE_CHECKOUT_URL")
+    ):
         raise ValueError(
-        "stripeCheckoutUrl is required when ctaMode is stripe_subscription"
-    )
+            "stripeCheckoutUrl is required when ctaMode is stripe_subscription"
+        )
 
     graph = build_landing_graph()
 

@@ -1,4 +1,14 @@
 export type CTAMode = "install" | "stripe_subscription";
+export type GenerationMode = "single" | "ab_test";
+export type CopyStrategy = "balanced" | "conservative" | "creative";
+
+export type LandingPageVariant = {
+  variant_id: string;
+  variant_name: string;
+  strategy: CopyStrategy;
+  landing_page: LandingPageContent;
+  design_direction?: DesignDirection | null;
+};
 
 export type CTAConfig = {
   mode: CTAMode;
@@ -53,7 +63,17 @@ export type FinalLandingPagePayload = {
   app_name: string;
   app_icon?: string | null;
   google_play_url: string;
-  landing_page: LandingPageContent;
+  landing_page?: LandingPageContent | null;
+  variants: LandingPageVariant[];
   cta: CTAConfig;
+  generation_mode: GenerationMode;
   screenshot_selection?: ScreenshotSelection | null;
+};
+
+export type DesignDirection = {
+  theme: "clean_light" | "bold_gradient" | "dark_premium" | "playful";
+  hero_layout: "split" | "centered" | "app_showcase";
+  section_style: "cards" | "minimal" | "magazine";
+  visual_tone: string;
+  reason: string;
 };

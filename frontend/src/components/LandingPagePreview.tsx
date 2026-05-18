@@ -1,13 +1,16 @@
 import Image from "next/image";
-import { FinalLandingPagePayload } from "../types/landing-page";
+import { DesignDirection, FinalLandingPagePayload } from "../types/landing-page";
 
 type Props = {
   data: FinalLandingPagePayload;
+  designDirection?: DesignDirection | null;
 };
 
 export function LandingPagePreview({ data }: Props) {
   const page = data.landing_page;
   const cta = data.cta;
+
+  if (!page) return null;
 
   return (
     <section className="overflow-hidden rounded-3xl bg-white text-slate-950 shadow-xl">

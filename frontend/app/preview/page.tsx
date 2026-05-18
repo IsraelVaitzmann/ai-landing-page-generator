@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FinalLandingPagePayload } from "../../src/types/landing-page";
 import { LandingPagePreview } from "../../src/components/LandingPagePreview";
+import { FinalLandingPagePayload } from "../../src/types/landing-page";
 
 export default function PreviewPage() {
   const [data, setData] = useState<FinalLandingPagePayload | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("generatedLandingPage");
+    const params = new URLSearchParams(window.location.search);
+    const variant = params.get("variant");
+
+    const storageKey = variant
+      ? `generatedLandingPage_${variant}`
+      : "generatedLandingPage";
+
+    const stored = localStorage.getItem(storageKey);
 
     if (stored) {
       setData(JSON.parse(stored));
@@ -21,7 +28,7 @@ export default function PreviewPage() {
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-sm">
           <h1 className="text-2xl font-bold">No landing page found</h1>
           <p className="mt-2 text-slate-600">
-            Generate a landing page first, then this preview will open here.
+            Generate a landing page first, then open this preview again.
           </p>
         </div>
       </main>

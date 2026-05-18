@@ -69,7 +69,7 @@ export default function Home() {
   const [googlePlayUrl, setGooglePlayUrl] = useState(
     ""
   );
-
+  const [generationMode, setGenerationMode] = useState<"single" | "ab_test">("single");
   const [ctaMode, setCtaMode] = useState<CTAMode>("install");
   const [result, setResult] = useState<FinalLandingPagePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,8 +113,7 @@ export default function Home() {
       const data = await generateLandingPage({
         googlePlayUrl,
         ctaMode,
-        stripeCheckoutUrl:
-          ctaMode === "stripe_subscription" ? STRIPE_CHECKOUT_URL : undefined,
+        generationMode,
         customCtaButtonText:
           ctaMode === "stripe_subscription" ? "Start Premium" : undefined,
         planId: ctaMode === "stripe_subscription" ? "pro_monthly" : undefined,
@@ -130,16 +129,33 @@ export default function Home() {
     }
   }
 
-  function openLandingPage() {
-    const stored = localStorage.getItem("generatedLandingPage");
+function openSingleLandingPage() {
+  if (!result || !result.landing_page) return;
 
-    if (!stored) {
-      setError("Landing page data was not found. Please generate again.");
-      return;
-    }
+  localStorage.setItem("generatedLandingPage", JSON.stringify(result));
 
-    window.open("/preview", "_blank", "noopener,noreferrer");
-  }
+  window.open("/preview", "_blank", "noopener,noreferrer");
+}
+
+function openVariant(variantId: string) {
+  if (!result) return;
+
+  const variant = result.variants.find((item) => item.variant_id === variantId);
+
+  if (!variant) return;
+
+  localStorage.setItem(
+    `generatedLandingPage_${variantId}`,
+    JSON.stringify({
+      ...result,
+      landing_page: variant.landing_page,
+      variants: [],
+      generation_mode: "single",
+    })
+  );
+
+  window.open(`/preview?variant=${variantId}`, "_blank", "noopener,noreferrer");
+}
 
   return (
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,#ede9fe,transparent_40%),radial-gradient(ellipse_at_bottom_right,#dbeafe,transparent_40%),linear-gradient(to_bottom,#f8fafc,#eef2ff)] px-4 py-8 text-slate-950 md:px-8">
@@ -185,6 +201,33 @@ export default function Home() {
                 CTA Mode
               </label>
 
+              <div>
+                <label className="text-sm font-bold text-slate-700">
+                  Generation Mode
+                </label>
+
+                <select
+                  value={generationMode}
+                  onChange={(event) =>
+                    setGenerationMode(event.target.value as "single" | "ab_test")
+                  }
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
+                >
+                  <option value="single">Single Landing Page</option>
+                  <option value="ab_test">A/B Test — Conservative vs Creative</option>
+                </select>
+
+                <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+                  {generationMode === "single" ? (
+                    <p>Generate one balanced landing page.</p>
+                  ) : (
+                    <p>
+                      Generate two landing page variants: one conservative and one creative.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <select
                 value={ctaMode}
                 onChange={(event) => setCtaMode(event.target.value as CTAMode)}
@@ -216,7 +259,11 @@ export default function Home() {
               disabled={loading}
               className="rounded-2xl bg-slate-950 px-6 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Generating..." : "Generate Landing Page"}
+              {loading
+                ? generationMode === "ab_test"
+                  ? "Generating two landing page variants..."
+                  : "Generating landing page..."
+                : "Generate Landing Page"}
             </button>
           </div>
 
@@ -255,27 +302,67 @@ export default function Home() {
           )}
 
           {result && !loading && (
-            <div className="mt-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-6">
-              <h3 className="text-xl font-black text-emerald-900">
-                🎉 Landing page is ready
+            <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="text-xl font-black text-emerald-950">
+                Landing page is ready
               </h3>
 
-              <p className="mt-2 text-sm text-emerald-700">
-                CTA mode:{" "}
-                <span className="font-bold">
-                  {result.cta.mode === "install"
-                    ? "Google Play Install"
-                    : "Stripe Subscription"}
-                </span>
-              </p>
+              {result.generation_mode === "single" ? (
+                <button
+                  type="button"
+                  onClick={openSingleLandingPage}
+                  className="mt-4 rounded-2xl bg-emerald-700 px-6 py-3 font-bold text-white transition hover:bg-emerald-800"
+                >
+                  Open Landing Page
+                </button>
+              ) : (
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {result.variants.map((variant) => (
+                    <div
+                      key={variant.variant_id}
+                      className="rounded-3xl border bg-white p-6 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">
+                          {variant.strategy}
+                        </p>
 
-              <button
-                type="button"
-                onClick={openLandingPage}
-                className="mt-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-3 font-bold text-white shadow-md shadow-emerald-100 transition hover:-translate-y-0.5 hover:from-emerald-700 hover:to-teal-700"
-              >
-                Open Landing Page →
-              </button>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                          {variant.variant_id.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <h4 className="mt-3 text-xl font-black text-slate-950">
+                        {variant.variant_name}
+                      </h4>
+
+                      <p className="mt-3 text-sm text-slate-600">
+                        {variant.strategy === "conservative"
+                          ? "Trust-focused, practical, and conversion-safe copywriting."
+                          : "Emotion-driven, bold, and curiosity-focused marketing copy."}
+                      </p>
+
+                      <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Hero Headline
+                        </p>
+
+                        <p className="mt-2 text-lg font-bold text-slate-950">
+                          {variant.landing_page.hero.headline}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openVariant(variant.variant_id)}
+                        className="mt-5 w-full rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                      >
+                        Open This Variant
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

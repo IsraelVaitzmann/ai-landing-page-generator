@@ -1,47 +1,19 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from typing import Literal
+from enum import Enum
+from typing import List, Literal, Optional
+
+from pydantic import BaseModel
 
 
-class AppReview(BaseModel):
-    score: Optional[int] = None
-    content: str
+class GenerationMode(str, Enum):
+    single = "single"
+    ab_test = "ab_test"
 
 
-class RawAppData(BaseModel):
-    title: str
-    description: Optional[str] = None
-    summary: Optional[str] = None
-    score: Optional[float] = None
-    ratings: Optional[int] = None
-    installs: Optional[str] = None
-    icon: Optional[str] = None
-    screenshots: List[str] = []
-    reviews: List[AppReview] = []
+class CopyStrategy(str, Enum):
+    balanced = "balanced"
+    conservative = "conservative"
+    creative = "creative"
 
-
-class HighlightReview(BaseModel):
-    quote: str
-    reason: str
-    score: Optional[int] = None
-
-
-class SelectedReview(BaseModel):
-    user_review: str
-    marketing_reason: str
-    rating: Optional[int] = None
-
-
-class MarketingInsights(BaseModel):
-    target_audience: str = Field(description="The main audience most likely to convert")
-    core_value_proposition: str = Field(description="One clear sentence explaining why users should care")
-    top_features: List[str] = Field(description="The top 3-5 most marketable features")
-    emotional_hooks: List[str] = Field(description="Emotional motivations that can be used in copy")
-    best_reviews: List[SelectedReview] = Field(
-        description="Real high-quality reviews selected for social proof"
-    )
-    landing_page_tone: str = Field(description="Recommended tone for the page")
-    hero_angle: str = Field(description="The main angle for the hero section")
 
 class HeroSection(BaseModel):
     headline: str
@@ -54,15 +26,10 @@ class FeatureItem(BaseModel):
     description: str
 
 
-class BenefitItem(BaseModel):
-    title: str
-    description: str
-
-
 class SocialProofItem(BaseModel):
     quote: str
-    source: str = "Google Play Review"
-    rating: Optional[int] = None
+    source: str
+    rating: Optional[float] = None
 
 
 class FAQItem(BaseModel):
@@ -78,18 +45,11 @@ class PageMetadata(BaseModel):
 class LandingPageContent(BaseModel):
     hero: HeroSection
     features: List[FeatureItem]
-    benefits: List[BenefitItem]
+    benefits: List[FeatureItem]
     social_proof: List[SocialProofItem]
     media_gallery: List[str]
     faq: List[FAQItem]
     metadata: PageMetadata
-
-class CTAConfigInput(BaseModel):
-    cta_mode: Literal["install", "stripe_subscription"]
-    google_play_url: str
-    stripe_checkout_url: Optional[str] = None
-    custom_cta_button_text: Optional[str] = None
-    plan_id: Optional[str] = None
 
 
 class CTAConfig(BaseModel):
@@ -99,23 +59,67 @@ class CTAConfig(BaseModel):
     message: str
     plan_id: Optional[str] = None
 
+
+class CTAConfigInput(BaseModel):
+    cta_mode: str
+    google_play_url: str
+    stripe_checkout_url: Optional[str] = None
+    custom_cta_button_text: Optional[str] = None
+    plan_id: Optional[str] = None
+
+
 class ScreenshotSelection(BaseModel):
     hero_screenshot: Optional[str] = None
-    gallery_screenshots: List[str] = []
+    gallery_screenshots: List[str]
     selection_reason: str
+
+
+class MarketingInsights(BaseModel):
+    target_audience: str
+    value_proposition: str
+    key_features: List[str]
+    emotional_hooks: List[str]
+    selected_reviews: List[str]
+    tone: str
+    hero_angle: str
+
+
+class LandingPageVariant(BaseModel):
+    variant_id: str
+    variant_name: str
+    strategy: CopyStrategy
+    landing_page: LandingPageContent
+
+
+class GenerateLandingPageRequest(BaseModel):
+    googlePlayUrl: str
+    ctaMode: Literal["install", "stripe_subscription"]
+    generationMode: GenerationMode = GenerationMode.single
+    stripeCheckoutUrl: Optional[str] = None
+    customCtaButtonText: Optional[str] = None
+    planId: Optional[str] = None
+
 
 class FinalLandingPagePayload(BaseModel):
     app_name: str
     app_icon: Optional[str] = None
     google_play_url: str
-    landing_page: LandingPageContent
+    landing_page: Optional[LandingPageContent] = None
+    variants: List[LandingPageVariant] = []
     cta: CTAConfig
+    generation_mode: GenerationMode = GenerationMode.single
     screenshot_selection: Optional[ScreenshotSelection] = None
 
-class GenerateLandingPageRequest(BaseModel):
-    googlePlayUrl: str
-    ctaMode: Literal["install", "stripe_subscription"]
-    stripeCheckoutUrl: Optional[str] = None
-    customCtaButtonText: Optional[str] = None
-    planId: Optional[str] = None
+class DesignDirection(BaseModel):
+    theme: Literal["clean_light", "bold_gradient", "dark_premium", "playful"]
+    hero_layout: Literal["split", "centered", "app_showcase"]
+    section_style: Literal["cards", "minimal", "magazine"]
+    visual_tone: str
+    reason: str
 
+class LandingPageVariant(BaseModel):
+    variant_id: str
+    variant_name: str
+    strategy: CopyStrategy
+    landing_page: LandingPageContent
+    design_direction: Optional[DesignDirection] = None

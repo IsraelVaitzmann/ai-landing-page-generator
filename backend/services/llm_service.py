@@ -15,9 +15,9 @@ def get_gemini():
     )
 
 
-def get_claude():
+def get_claude(temperature: float = 0.7):
     return ChatAnthropic(
         model="claude-sonnet-4-20250514",
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
-        temperature=0.7
+        temperature=temperature
     )

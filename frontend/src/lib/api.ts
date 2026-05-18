@@ -1,8 +1,13 @@
-import { CTAMode, FinalLandingPagePayload } from "../types/landing-page";
+import {
+  CTAMode,
+  FinalLandingPagePayload,
+  GenerationMode,
+} from "../types/landing-page";
 
 export type GenerateLandingPageRequest = {
   googlePlayUrl: string;
   ctaMode: CTAMode;
+  generationMode: GenerationMode;
   stripeCheckoutUrl?: string;
   customCtaButtonText?: string;
   planId?: string;
