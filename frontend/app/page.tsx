@@ -197,10 +197,6 @@ function openVariant(variantId: string) {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-slate-700">
-                CTA Mode
-              </label>
-
               <div>
                 <label className="text-sm font-bold text-slate-700">
                   Generation Mode
@@ -228,6 +224,9 @@ function openVariant(variantId: string) {
                 </div>
               </div>
 
+              <label className="text-sm font-bold text-slate-700">
+                CTA Mode
+              </label>
               <select
                 value={ctaMode}
                 onChange={(event) => setCtaMode(event.target.value as CTAMode)}

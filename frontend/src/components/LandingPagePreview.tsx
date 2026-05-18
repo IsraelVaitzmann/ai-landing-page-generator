@@ -12,6 +12,8 @@ export function LandingPagePreview({ data }: Props) {
 
   if (!page) return null;
 
+  
+
   return (
     <section className="overflow-hidden rounded-3xl bg-white text-slate-950 shadow-xl">
       <div className="grid gap-8 bg-slate-950 p-8 text-white md:grid-cols-2 md:p-12">
