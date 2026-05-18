@@ -84,11 +84,20 @@ class MarketingInsights(BaseModel):
     hero_angle: str
 
 
+class DesignDirection(BaseModel):
+    theme: Literal["clean_light", "bold_gradient", "dark_premium", "playful"]
+    hero_layout: Literal["split", "centered", "app_showcase"]
+    section_style: Literal["cards", "minimal", "magazine"]
+    visual_tone: str
+    reason: str
+
+
 class LandingPageVariant(BaseModel):
     variant_id: str
     variant_name: str
     strategy: CopyStrategy
     landing_page: LandingPageContent
+    design_direction: Optional[DesignDirection] = None
 
 
 class GenerateLandingPageRequest(BaseModel):
@@ -109,17 +118,3 @@ class FinalLandingPagePayload(BaseModel):
     cta: CTAConfig
     generation_mode: GenerationMode = GenerationMode.single
     screenshot_selection: Optional[ScreenshotSelection] = None
-
-class DesignDirection(BaseModel):
-    theme: Literal["clean_light", "bold_gradient", "dark_premium", "playful"]
-    hero_layout: Literal["split", "centered", "app_showcase"]
-    section_style: Literal["cards", "minimal", "magazine"]
-    visual_tone: str
-    reason: str
-
-class LandingPageVariant(BaseModel):
-    variant_id: str
-    variant_name: str
-    strategy: CopyStrategy
-    landing_page: LandingPageContent
-    design_direction: Optional[DesignDirection] = None
