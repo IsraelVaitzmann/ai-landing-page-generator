@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional, TypedDict
 
@@ -20,6 +21,8 @@ from models.schemas import (
 )
 from services.playstore_service import extract_app_data
 
+logger = logging.getLogger(__name__)
+
 
 class LandingGraphState(TypedDict, total=False):
     request: GenerateLandingPageRequest
@@ -32,50 +35,75 @@ class LandingGraphState(TypedDict, total=False):
     final_payload: FinalLandingPagePayload
 
 def extraction_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: extraction")
+    logger.info("Graph node started: extraction")
 
     request = state["request"]
-    app_data = extract_app_data(request.googlePlayUrl)
+    try:
+        app_data = extract_app_data(request.googlePlayUrl)
+    except Exception:
+        logger.exception("Graph node failed: extraction")
+        raise
 
+    logger.info("Graph node finished: extraction (app=%s)", app_data.get("title"))
     return {
         "app_data": app_data,
     }
 
 def marketing_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: marketing")
+    logger.info("Graph node started: marketing")
 
     app_data = state["app_data"]
-    marketing_insights = analyze_marketing(app_data)
+    try:
+        marketing_insights = analyze_marketing(app_data)
+    except Exception:
+        logger.exception("Graph node failed: marketing")
+        raise
 
+    logger.info("Graph node finished: marketing")
     return {
         "marketing_insights": marketing_insights,
     }
 
 def copywriter_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: copywriter")
+    logger.info("Graph node started: copywriter")
 
     request = state["request"]
     app_data = state["app_data"]
     marketing_insights = state["marketing_insights"]
     screenshot_selection = state["screenshot_selection"]
 
+    try:
+        if request.generationMode == GenerationMode.ab_test:
+            conservative_page = generate_landing_page_content(
+                app_data=app_data,
+                marketing_insights=marketing_insights.model_dump(),
+                cta_mode=request.ctaMode,
+                selected_screenshots=screenshot_selection.gallery_screenshots,
+                strategy=CopyStrategy.conservative,
+            )
+
+            creative_page = generate_landing_page_content(
+                app_data=app_data,
+                marketing_insights=marketing_insights.model_dump(),
+                cta_mode=request.ctaMode,
+                selected_screenshots=screenshot_selection.gallery_screenshots,
+                strategy=CopyStrategy.creative,
+            )
+        else:
+            landing_page = generate_landing_page_content(
+                app_data=app_data,
+                marketing_insights=marketing_insights.model_dump(),
+                cta_mode=request.ctaMode,
+                selected_screenshots=screenshot_selection.gallery_screenshots,
+                strategy=CopyStrategy.balanced,
+            )
+    except Exception:
+        logger.exception("Graph node failed: copywriter")
+        raise
+
+    logger.info("Graph node finished: copywriter")
+
     if request.generationMode == GenerationMode.ab_test:
-        conservative_page = generate_landing_page_content(
-            app_data=app_data,
-            marketing_insights=marketing_insights.model_dump(),
-            cta_mode=request.ctaMode,
-            selected_screenshots=screenshot_selection.gallery_screenshots,
-            strategy=CopyStrategy.conservative,
-        )
-
-        creative_page = generate_landing_page_content(
-            app_data=app_data,
-            marketing_insights=marketing_insights.model_dump(),
-            cta_mode=request.ctaMode,
-            selected_screenshots=screenshot_selection.gallery_screenshots,
-            strategy=CopyStrategy.creative,
-        )
-
         return {
             "variants": [
                 LandingPageVariant(
@@ -93,54 +121,56 @@ def copywriter_node(state: LandingGraphState) -> LandingGraphState:
             ]
         }
 
-    landing_page = generate_landing_page_content(
-        app_data=app_data,
-        marketing_insights=marketing_insights.model_dump(),
-        cta_mode=request.ctaMode,
-        selected_screenshots=screenshot_selection.gallery_screenshots,
-        strategy=CopyStrategy.balanced,
-    )
-
     return {
         "landing_page": landing_page,
     }
 
 def cta_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: cta")
+    logger.info("Graph node started: cta")
 
     request = state["request"]
 
-    cta = generate_cta_config(
-        CTAConfigInput(
-            cta_mode=request.ctaMode,
-            google_play_url=request.googlePlayUrl,
-            stripe_checkout_url=request.stripeCheckoutUrl,
-            custom_cta_button_text=request.customCtaButtonText,
-            plan_id=request.planId,
+    try:
+        cta = generate_cta_config(
+            CTAConfigInput(
+                cta_mode=request.ctaMode,
+                google_play_url=request.googlePlayUrl,
+                stripe_checkout_url=request.stripeCheckoutUrl,
+                custom_cta_button_text=request.customCtaButtonText,
+                plan_id=request.planId,
+            )
         )
-    )
+    except Exception:
+        logger.exception("Graph node failed: cta")
+        raise
 
+    logger.info("Graph node finished: cta")
     return {
         "cta": cta,
     }
 
 def screenshot_selection_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: screenshot selection")
+    logger.info("Graph node started: screenshot_selection")
 
     app_data = state["app_data"]
     marketing_insights = state["marketing_insights"]
 
-    screenshot_selection = select_screenshots(
-        screenshots=app_data.get("screenshots", []),
-        marketing_insights=marketing_insights,
-    )
+    try:
+        screenshot_selection = select_screenshots(
+            screenshots=app_data.get("screenshots", []),
+            marketing_insights=marketing_insights,
+        )
+    except Exception:
+        logger.exception("Graph node failed: screenshot_selection")
+        raise
 
+    logger.info("Graph node finished: screenshot_selection")
     return {
         "screenshot_selection": screenshot_selection,
     }
 
 def final_payload_node(state: LandingGraphState) -> LandingGraphState:
-    print("Graph node: final payload")
+    logger.info("Graph node started: final_payload")
 
     request = state["request"]
     app_data = state["app_data"]
@@ -157,6 +187,7 @@ def final_payload_node(state: LandingGraphState) -> LandingGraphState:
         screenshot_selection=state.get("screenshot_selection"),
     )
 
+    logger.info("Graph node finished: final_payload")
     return {
         "final_payload": final_payload,
     }
@@ -191,6 +222,12 @@ def generate_landing_page_graph_workflow(
             "stripeCheckoutUrl is required when ctaMode is stripe_subscription"
         )
 
+    logger.info(
+        "Starting landing page pipeline (googlePlayUrl=%s, generationMode=%s)",
+        request.googlePlayUrl,
+        request.generationMode,
+    )
+
     graph = build_landing_graph()
 
     result = graph.invoke(
@@ -199,4 +236,5 @@ def generate_landing_page_graph_workflow(
         }
     )
 
+    logger.info("Landing page pipeline completed")
     return result["final_payload"]
